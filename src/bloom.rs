@@ -48,25 +48,31 @@ mod test {
 
     use super::BloomFilter;
 
+    macro_rules! assert_bit_vec {
+        ($bit_vec:expr, $n:literal, $($vals:literal),*) => {{
+            // A false is used at the beginning here to start the expression.
+            // The rest are logical ORs, so the `false` is simply to satisfy the
+            // compiler checks
+            assert_eq!($bit_vec, BitVec::from_fn($n, |i| { false $(|| i == $vals)* }));
+        }};
+    }
+
     #[test]
     fn create() {
-        let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
+        let bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         assert_eq!(bloom.n_bits, 10);
         assert_eq!(bloom.k, 2);
-
-        bloom.insert("test");
-        // Inputting "test" should deterministically result in 0000000110 for
-        // the internal bit vec
-        assert_eq!(bloom.inner, BitVec::from_fn(10, |i| { i == 7 || i == 8 }));
     }
 
     #[test]
     fn insertion() {
         let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
-        bloom.insert("test");
-
-        let expected_bit_vec = BitVec::from_fn(10, |i| i == 7 || i == 8);
-        // Inputting test should result in 0000000110 for the bit vec
-        assert_eq!(bloom.inner, expected_bit_vec);
+        bloom.insert("hello");
+        // Results in 0100000100 for the internal bit vec
+        assert_bit_vec!(bloom.inner, 10, 1, 7);
+        bloom.insert("world");
+        // Results in 0000100001 for the internal bit vec
+        // Meaning that the overall vector is 0100100101
+        assert_bit_vec!(bloom.inner, 10, 1, 7, 4, 9);
     }
 }
