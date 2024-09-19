@@ -1,10 +1,11 @@
 use std::{
     fmt::Debug,
-    hash::{DefaultHasher, Hash, Hasher},
+    hash::{Hash, Hasher},
     marker::PhantomData,
 };
 
 use bit_vec::BitVec;
+use fxhash::FxHasher;
 
 pub struct BloomFilter<K: Hash> {
     /// Internal bit vector representation.
@@ -14,7 +15,6 @@ pub struct BloomFilter<K: Hash> {
     /// Number of times to run the specified hash
     k: usize,
     _phantom: PhantomData<K>,
-    hasher: DefaultHasher,
 }
 
 impl<K: Hash + Debug> BloomFilter<K> {
@@ -25,7 +25,6 @@ impl<K: Hash + Debug> BloomFilter<K> {
             n_bits,
             k,
             _phantom: PhantomData,
-            hasher: DefaultHasher::new(),
         }
     }
 
@@ -35,31 +34,29 @@ impl<K: Hash + Debug> BloomFilter<K> {
     /// hash of the item which was given. An internal bit vector is updated based
     /// on the hash of the contents that was provided.
     pub fn insert(&mut self, key: K) {
+        let mut h = FxHasher::default();
         for _ in 0..self.k {
-            key.hash(&mut self.hasher);
-            let index = self.hash_index(&key);
-            println!("Insert {key:?}={index}");
+            let index = self.hash_index(&key, &mut h);
             self.inner.set(index, true);
         }
     }
 
-    fn hash_index(&mut self, key: &K) -> usize {
-        key.hash(&mut self.hasher);
-        self.hasher.finish() as usize % self.n_bits
+    fn hash_index<H: Hasher>(&mut self, key: &K, hasher: &mut H) -> usize {
+        key.hash(hasher);
+        hasher.finish() as usize % self.n_bits
     }
 
     pub fn get(&mut self, key: K) -> bool {
+        let mut h = FxHasher::default();
         let mut exists = Vec::with_capacity(self.k);
         for _ in 0..self.k {
-            let index = self.hash_index(&key);
-            println!("Get {key:?}={index}");
+            let index = self.hash_index(&key, &mut h);
             exists.push(
                 self.inner
                     .get(index)
                     .expect("Modulo ensures that this is always in-bounds"),
             );
         }
-        println!("{exists:?}");
         exists.iter().all(|&i| i)
     }
 }
@@ -100,16 +97,16 @@ mod test {
     fn insertion() {
         let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         bloom.insert("hello");
-        assert_bit_vec!(bloom.inner, 1, 7);
+        assert_bit_vec!(bloom.inner, 0, 6);
         bloom.insert("world");
-        assert_bit_vec!(bloom.inner, 1, 7, 0, 3);
+        assert_bit_vec!(bloom.inner, 0, 2, 4, 6);
     }
 
     #[test]
     fn get() {
         let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         bloom.insert("hello");
-        assert_eq!(bloom.get("hello"), true);
-        assert_eq!(bloom.get("world"), false);
+        assert!(bloom.get("hello"));
+        assert!(!bloom.get("world"));
     }
 }
