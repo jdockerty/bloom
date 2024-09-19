@@ -82,6 +82,7 @@ impl<K: Hash> BloomFilter<K> {
 #[cfg(test)]
 mod test {
     use bit_vec::BitVec;
+    use fxhash::FxHasher;
 
     use super::BloomFilter;
 
@@ -118,6 +119,12 @@ mod test {
         assert_bit_vec!(bloom.inner, 0, 6);
         bloom.insert("world");
         assert_bit_vec!(bloom.inner, 0, 2, 4, 6);
+    }
+
+    #[test]
+    fn index() {
+        let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
+        assert_eq!(bloom.hash_index(&"hello", &mut FxHasher::default()), 0);
     }
 
     #[test]
