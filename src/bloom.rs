@@ -14,6 +14,7 @@ pub struct BloomFilter<K: Hash> {
     /// Number of times to run the specified hash
     k: usize,
     _phantom: PhantomData<K>,
+    hasher: DefaultHasher,
 }
 
 impl<K: Hash + Debug> BloomFilter<K> {
@@ -24,6 +25,7 @@ impl<K: Hash + Debug> BloomFilter<K> {
             n_bits,
             k,
             _phantom: PhantomData,
+            hasher: DefaultHasher::new(),
         }
     }
 
@@ -33,12 +35,32 @@ impl<K: Hash + Debug> BloomFilter<K> {
     /// hash of the item which was given. An internal bit vector is updated based
     /// on the hash of the contents that was provided.
     pub fn insert(&mut self, key: K) {
-        let mut hasher = DefaultHasher::new();
         for _ in 0..self.k {
-            key.hash(&mut hasher);
-            let index = hasher.finish() as usize % self.n_bits;
+            key.hash(&mut self.hasher);
+            let index = self.hash_index(&key);
+            println!("Insert {key:?}={index}");
             self.inner.set(index, true);
         }
+    }
+
+    fn hash_index(&mut self, key: &K) -> usize {
+        key.hash(&mut self.hasher);
+        self.hasher.finish() as usize % self.n_bits
+    }
+
+    pub fn get(&mut self, key: K) -> bool {
+        let mut exists = Vec::with_capacity(self.k);
+        for _ in 0..self.k {
+            let index = self.hash_index(&key);
+            println!("Get {key:?}={index}");
+            exists.push(
+                self.inner
+                    .get(index)
+                    .expect("Modulo ensures that this is always in-bounds"),
+            );
+        }
+        println!("{exists:?}");
+        exists.iter().all(|&i| i)
     }
 }
 
@@ -78,11 +100,16 @@ mod test {
     fn insertion() {
         let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         bloom.insert("hello");
-        // Results in 0100000100 for the internal bit vec
         assert_bit_vec!(bloom.inner, 1, 7);
         bloom.insert("world");
-        // Results in 0000100001 for the internal bit vec
-        // Meaning that the overall vector is 0100100101
-        assert_bit_vec!(bloom.inner, 1, 7, 4, 9);
+        assert_bit_vec!(bloom.inner, 1, 7, 0, 3);
+    }
+
+    #[test]
+    fn get() {
+        let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
+        bloom.insert("hello");
+        assert_eq!(bloom.get("hello"), true);
+        assert_eq!(bloom.get("world"), false);
     }
 }
