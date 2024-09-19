@@ -68,16 +68,16 @@ impl<K: Hash> BloomFilter<K> {
         let mut h = FxHasher::default();
         for _ in 0..self.k {
             let index = self.hash_index(&key, &mut h);
-            match self
-                .inner
-                .get(index)
-                .expect("Modulo ensures that this is always in-bounds")
-            {
-                true => continue,
+            // Safety: A bound check is not required here as the index is
+            // calculated from a modulo operation against the number of bits
+            // within the vector
+            if self.inner[index] {
+                continue;
+            } else {
                 // We can instantly return here as if the value has passed
                 // through the filter before then the bit would have definitely
                 // been set to `true` already.
-                false => return false,
+                return false;
             }
         }
         true
