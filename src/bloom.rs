@@ -41,23 +41,42 @@ impl<K: Hash + Debug> BloomFilter<K> {
         }
     }
 
+    /// Get the hash index to set the bit as occupied within the internal bit
+    /// vector. This automatically applies the modulo of the number of bits
+    /// within the bit vector and is therefore ready to use.
     fn hash_index<H: Hasher>(&mut self, key: &K, hasher: &mut H) -> usize {
         key.hash(hasher);
         hasher.finish() as usize % self.n_bits
     }
 
-    pub fn get(&mut self, key: K) -> bool {
+    /// Determine whether a value is contained within the bloom filter.
+    ///
+    /// # Notes
+    ///
+    /// This can return false positives, but can not return a false negative.
+    ///
+    /// In other words this can return `true` for a value which is not in the
+    /// set because another item happened to flip the bits within the vector
+    /// as it resulted in the same hash index.
+    /// However, when any of the bits are 0 for an item this means the value is
+    /// definitely not within the set and we can return `false` for certain.
+    pub fn check(&mut self, key: K) -> bool {
         let mut h = FxHasher::default();
-        let mut exists = Vec::with_capacity(self.k);
         for _ in 0..self.k {
             let index = self.hash_index(&key, &mut h);
-            exists.push(
-                self.inner
-                    .get(index)
-                    .expect("Modulo ensures that this is always in-bounds"),
-            );
+            match self
+                .inner
+                .get(index)
+                .expect("Modulo ensures that this is always in-bounds")
+            {
+                true => continue,
+                // We can instantly return here as if the value has passed
+                // through the filter before then the bit would have definitely
+                // been set to `true` already.
+                false => return false,
+            }
         }
-        exists.iter().all(|&i| i)
+        true
     }
 }
 
@@ -103,10 +122,10 @@ mod test {
     }
 
     #[test]
-    fn get() {
+    fn check() {
         let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         bloom.insert("hello");
-        assert!(bloom.get("hello"));
-        assert!(!bloom.get("world"));
+        assert!(bloom.check("hello"));
+        assert!(!bloom.check("world"));
     }
 }
