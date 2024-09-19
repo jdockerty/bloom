@@ -1,5 +1,4 @@
 use std::{
-    fmt::Debug,
     hash::{Hash, Hasher},
     marker::PhantomData,
 };
@@ -17,7 +16,7 @@ pub struct BloomFilter<K: Hash> {
     _phantom: PhantomData<K>,
 }
 
-impl<K: Hash + Debug> BloomFilter<K> {
+impl<K: Hash> BloomFilter<K> {
     /// Create a new [`BloomFilter`].
     pub fn new(n_bits: usize, k: usize) -> Self {
         Self {
@@ -123,9 +122,11 @@ mod test {
 
     #[test]
     fn check() {
-        let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
-        bloom.insert("hello");
-        assert!(bloom.check("hello"));
-        assert!(!bloom.check("world"));
+        let mut bloom: BloomFilter<String> = BloomFilter::new(100, 2);
+        bloom.insert("hello".to_string());
+        assert!(bloom.check("hello".to_string()));
+        for i in 0..1000 {
+            assert!(!bloom.check(format!("{i}")));
+        }
     }
 }
