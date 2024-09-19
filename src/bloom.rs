@@ -12,7 +12,7 @@ pub struct BloomFilter<K: Hash> {
     inner: BitVec,
     /// Number of bits the bit vector was initialised with.
     n_bits: usize,
-    /// Number of times to run the specified hash
+    /// Number of times to run the hash
     k: usize,
     _phantom: PhantomData<K>,
 }
