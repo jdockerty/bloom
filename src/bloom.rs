@@ -1,4 +1,5 @@
 use std::{
+    fmt::Debug,
     hash::{DefaultHasher, Hash, Hasher},
     marker::PhantomData,
 };
@@ -15,7 +16,8 @@ pub struct BloomFilter<K: Hash> {
     _phantom: PhantomData<K>,
 }
 
-impl<K: Hash> BloomFilter<K> {
+impl<K: Hash + Debug> BloomFilter<K> {
+    /// Create a new [`BloomFilter`].
     pub fn new(n_bits: usize, k: usize) -> Self {
         Self {
             inner: BitVec::from_elem(n_bits, false),
@@ -25,11 +27,17 @@ impl<K: Hash> BloomFilter<K> {
         }
     }
 
+    /// Insert a value into the bloom filter.
+    ///
+    /// As this is a bloom filter, the value isn't _actually_ inserted. Only the
+    /// hash of the item which was given. An internal bit vector is updated based
+    /// on the hash of the contents that was provided.
     pub fn insert(&mut self, key: K) {
         let mut hasher = DefaultHasher::new();
         for _ in 0..self.k {
             key.hash(&mut hasher);
-            self.inner.set(hasher.finish() as usize % self.n_bits, true);
+            let index = hasher.finish() as usize % self.n_bits;
+            self.inner.set(index, true);
         }
     }
 }
