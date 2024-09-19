@@ -48,13 +48,23 @@ mod test {
 
     use super::BloomFilter;
 
+    /// Assertion over a provided [`BitVec`] and one which is constructed based
+    /// on provided integer literals to the [`create_bit_vec`] macro.
     macro_rules! assert_bit_vec {
-        ($bit_vec:expr, $n:literal, $($vals:literal),*) => {{
+        ($bit_vec:expr, $($vals:literal),*) => {
+            assert_eq!($bit_vec, create_bit_vec!($bit_vec.len(), $($vals),*));
+        };
+    }
+
+    /// Create a [`BitVec`] with the provided indexes being already flipped to
+    /// true (1).
+    macro_rules! create_bit_vec {
+        ($size:expr, $($indexes:literal),*) => {
             // A false is used at the beginning here to start the expression.
             // The rest are logical ORs, so the `false` is simply to satisfy the
             // compiler checks
-            assert_eq!($bit_vec, BitVec::from_fn($n, |i| { false $(|| i == $vals)* }));
-        }};
+            BitVec::from_fn($size, |i| { false $(|| i == $indexes)*})
+        };
     }
 
     #[test]
@@ -69,10 +79,10 @@ mod test {
         let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         bloom.insert("hello");
         // Results in 0100000100 for the internal bit vec
-        assert_bit_vec!(bloom.inner, 10, 1, 7);
+        assert_bit_vec!(bloom.inner, 1, 7);
         bloom.insert("world");
         // Results in 0000100001 for the internal bit vec
         // Meaning that the overall vector is 0100100101
-        assert_bit_vec!(bloom.inner, 10, 1, 7, 4, 9);
+        assert_bit_vec!(bloom.inner, 1, 7, 4, 9);
     }
 }
