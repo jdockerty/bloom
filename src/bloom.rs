@@ -6,6 +6,11 @@ use std::{
 use bit_vec::BitVec;
 use fxhash::FxHasher;
 
+/// Implementation of a Bloom filter.
+///
+/// This is used to determine whether or not a value is contained within a set.
+/// Under the hood it utilises [`fxhash`] which is incredibly fast, but **not**
+/// cryptographically safe.
 pub struct BloomFilter<K: Hash> {
     /// Internal bit vector representation.
     inner: BitVec,
