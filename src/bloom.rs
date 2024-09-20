@@ -124,6 +124,15 @@ mod test {
         assert_bit_vec!(bloom.inner, 0, 6);
         bloom.insert("world");
         assert_bit_vec!(bloom.inner, 0, 2, 4, 6);
+
+        let mut bloom: BloomFilter<i32> = BloomFilter::new(1000, 4);
+
+        for i in 0..100 {
+            bloom.insert(i);
+        }
+        for i in 0..100 {
+            assert!(bloom.check(i));
+        }
     }
 
     #[test]
