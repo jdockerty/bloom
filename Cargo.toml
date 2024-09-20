@@ -6,3 +6,7 @@ edition = "2021"
 [dependencies]
 bit-vec = "0.8.0"
 fxhash = "0.2.1"
+
+[dev-dependencies]
+paste = "1.0.15"
+rand = "0.8.5"

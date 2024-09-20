@@ -88,6 +88,7 @@ impl<K: Hash> BloomFilter<K> {
 mod test {
     use bit_vec::BitVec;
     use fxhash::FxHasher;
+    use rand::Rng;
 
     use super::BloomFilter;
 
@@ -117,6 +118,46 @@ mod test {
         assert_eq!(bloom.k, 2);
     }
 
+    macro_rules! bloom_filter_types {
+        ($type:ty, $n:literal, $k:literal, $generator:expr) => {
+            paste::paste! {
+                #[test]
+                fn [<bloom_filter_ $type:lower>]() {
+                    let mut init = Vec::with_capacity($n);
+                    for _ in 0..$n {
+                        init.push($generator());
+                    }
+                    let mut bloom: BloomFilter<$type> = BloomFilter::new($n, $k);
+                    assert_eq!(bloom.n_bits, $n);
+                    assert_eq!(bloom.k, $k);
+
+                    for i in init {
+                        bloom.insert(i.clone());
+                        assert!(bloom.check(i));
+                    }
+                }
+            }
+        };
+    }
+
+    fn rand_string() -> String {
+        rand::thread_rng()
+            .sample_iter(rand::distributions::Alphanumeric)
+            .take(8)
+            .map(char::from)
+            .collect()
+    }
+
+    fn rand_int() -> usize {
+        rand::thread_rng().gen_range(0..1000)
+    }
+
+    bloom_filter_types!(i32, 100, 2, || rand_int() as i32);
+    bloom_filter_types!(u32, 250, 2, || rand_int() as u32);
+    bloom_filter_types!(i64, 1000, 2, || rand_int() as i64);
+    bloom_filter_types!(u64, 30, 2, || rand_int() as u64);
+    bloom_filter_types!(String, 10, 2, || rand_string());
+
     #[test]
     fn insertion() {
         let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
@@ -129,8 +170,6 @@ mod test {
 
         for i in 0..100 {
             bloom.insert(i);
-        }
-        for i in 0..100 {
             assert!(bloom.check(i));
         }
     }
