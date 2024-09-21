@@ -48,7 +48,7 @@ impl<K: Hash> BloomFilter<K> {
     /// Get the hash index to set the bit as occupied within the internal bit
     /// vector. This automatically applies the modulo of the number of bits
     /// within the bit vector and is therefore ready to use.
-    fn hash_index<H: Hasher>(&mut self, key: &K, hasher: &mut H) -> usize {
+    fn hash_index<H: Hasher>(&self, key: &K, hasher: &mut H) -> usize {
         key.hash(hasher);
         hasher.finish() as usize % self.n_bits
     }
@@ -64,7 +64,7 @@ impl<K: Hash> BloomFilter<K> {
     /// as it resulted in the same hash index.
     /// However, when any of the bits are 0 for an item this means the value is
     /// definitely not within the set and we can return `false` for certain.
-    pub fn check(&mut self, key: K) -> bool {
+    pub fn check(&self, key: K) -> bool {
         let mut h = FxHasher::default();
         for _ in 0..self.k {
             let index = self.hash_index(&key, &mut h);
@@ -156,7 +156,7 @@ mod test {
     bloom_filter_types!(u32, 250, 2, || rand_int() as u32);
     bloom_filter_types!(i64, 1000, 2, || rand_int() as i64);
     bloom_filter_types!(u64, 30, 2, || rand_int() as u64);
-    bloom_filter_types!(String, 10, 2, || rand_string());
+    bloom_filter_types!(String, 10, 2, rand_string);
 
     #[test]
     fn insertion() {
@@ -176,7 +176,7 @@ mod test {
 
     #[test]
     fn index() {
-        let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
+        let bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         assert_eq!(bloom.hash_index(&"hello", &mut FxHasher::default()), 0);
     }
 
