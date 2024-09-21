@@ -47,3 +47,15 @@ jobs:
           checksum: true
       - name: Run cargo-tarpaulin
         run: cargo tarpaulin --ignore-tests
+
+  publish:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.ref, 'refs/tags/v')
+    needs: ["test", "fmt", "clippy", "coverage"]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish crate
+        run: cargo publish ${{ secrets.CRATES_IO_TOKEN }}
