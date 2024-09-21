@@ -156,7 +156,7 @@ mod test {
     bloom_filter_types!(u32, 250, 2, || rand_int() as u32);
     bloom_filter_types!(i64, 1000, 2, || rand_int() as i64);
     bloom_filter_types!(u64, 30, 2, || rand_int() as u64);
-    bloom_filter_types!(String, 10, 2, || rand_string());
+    bloom_filter_types!(String, 10, 2, rand_string);
 
     #[test]
     fn insertion() {
@@ -176,7 +176,7 @@ mod test {
 
     #[test]
     fn index() {
-        let mut bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
+        let bloom: BloomFilter<&str> = BloomFilter::new(10, 2);
         assert_eq!(bloom.hash_index(&"hello", &mut FxHasher::default()), 0);
     }
 
