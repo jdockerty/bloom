@@ -1,6 +1,6 @@
 [package]
 name = "bloomfx"
-version = "0.1.0"
+version = "0.1.1"
 description = "Bloom filter implementation backed by fxhash"
 edition = "2021"
 repository = "https://github.com/jdockerty/bloomfx"
