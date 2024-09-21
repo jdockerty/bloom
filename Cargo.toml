@@ -1,7 +1,19 @@
 [package]
 name = "bloomfx"
 version = "0.1.0"
+description = "Bloom filter implementation backed by fxhash"
 edition = "2021"
+repository = "https://github.com/jdockerty/bloomfx"
+homepage = "https://github.com/jdockerty/bloomfx"
+license-file = "LICENSE"
+keywords = ["bloom", "bloomfilter", "fxhash", "bloom-filter"]
+categories = ["data-structures", "caching", "algorithms"]
+authors = ["Jack Dockerty"]
+
+exclude = [".github/*", "README.md", ".gitignore"]
+
+[lib]
+name = "bloomfx"
 
 [dependencies]
 bit-vec = "0.8.0"
